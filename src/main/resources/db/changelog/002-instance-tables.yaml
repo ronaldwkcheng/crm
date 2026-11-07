@@ -11,6 +11,11 @@ databaseChangeLog:
               - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+        - createIndex:
+            indexName: ix_schema_instance_schema_definition
+            tableName: schema_instance
+            columns:
+              - column: { name: schema_definition_id }
 
   - changeSet:
       id: 002-02-instance-property-value
@@ -30,11 +35,14 @@ databaseChangeLog:
               - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+        # Covers findByInstance/findByInstanceIn/deleteByInstance (instance_id, the leading column)
+        # and deleteByInstanceAndProperty (both columns) in one index.
         - createIndex:
-            indexName: ix_ipv_instance
+            indexName: ix_ipv_instance_property
             tableName: instance_property_value
             columns:
               - column: { name: instance_id }
+              - column: { name: property_id }
         - createIndex:
             indexName: ix_ipv_property_string
             tableName: instance_property_value
@@ -72,3 +80,12 @@ databaseChangeLog:
             tableName: instance_association
             columnNames: association_id, source_instance_id, target_instance_id
             constraintName: uq_link_association_source_target
+        # findByAssociationAndSourceInstance/countByAssociationAndSourceInstance are covered by the
+        # leading two columns of the unique constraint above; this covers the target-side equivalents,
+        # since target_instance_id is the unique constraint's third (non-leading) column.
+        - createIndex:
+            indexName: ix_instance_association_target
+            tableName: instance_association
+            columns:
+              - column: { name: association_id }
+              - column: { name: target_instance_id }

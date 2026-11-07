@@ -63,6 +63,12 @@ databaseChangeLog:
             tableName: schema_property
             columnNames: schema_definition_id, internal_name
             constraintName: uq_property_schema_internal_name
+        # existsByEnumTypeDefinition: no other constraint has enum_type_definition_id as a leading column.
+        - createIndex:
+            indexName: ix_schema_property_enum_type
+            tableName: schema_property
+            columns:
+              - column: { name: enum_type_definition_id }
 
   - changeSet:
       id: 001-04-enum-value-definition
@@ -83,6 +89,13 @@ databaseChangeLog:
             tableName: enum_value_definition
             columnNames: enum_type_definition_id, item_value
             constraintName: uq_value_enum_type_item_value
+        # findByEnumTypeDefinitionOrderByDisplayOrderAsc: avoids a sort step on top of the lookup.
+        - createIndex:
+            indexName: ix_enum_value_definition_type_order
+            tableName: enum_value_definition
+            columns:
+              - column: { name: enum_type_definition_id }
+              - column: { name: display_order }
 
   - changeSet:
       id: 001-05-schema-association
