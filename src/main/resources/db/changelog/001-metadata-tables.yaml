@@ -8,12 +8,16 @@ databaseChangeLog:
             columns:
               - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
               - column: { name: display_name, type: VARCHAR(255), constraints: { nullable: false } }
-              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false, unique: true } }
+              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false } }
               - column: { name: summary, type: VARCHAR(255) }
               - column: { name: description, type: VARCHAR(2000) }
               - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: schema_definition
+            columnNames: internal_name
+            constraintName: uq_schema_definition_internal_name
 
   - changeSet:
       id: 001-02-enum-type-definition
@@ -24,12 +28,16 @@ databaseChangeLog:
             columns:
               - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
               - column: { name: display_name, type: VARCHAR(255), constraints: { nullable: false } }
-              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false, unique: true } }
+              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false } }
               - column: { name: summary, type: VARCHAR(255) }
               - column: { name: description, type: VARCHAR(2000) }
               - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: enum_type_definition
+            columnNames: internal_name
+            constraintName: uq_enum_type_definition_internal_name
 
   - changeSet:
       id: 001-03-schema-property
@@ -85,7 +93,7 @@ databaseChangeLog:
             columns:
               - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
               - column: { name: display_name, type: VARCHAR(255), constraints: { nullable: false } }
-              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false, unique: true } }
+              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false } }
               - column: { name: summary, type: VARCHAR(255) }
               - column: { name: description, type: VARCHAR(2000) }
               - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
@@ -98,3 +106,7 @@ databaseChangeLog:
               - column: { name: forward_label, type: VARCHAR(255), constraints: { nullable: false } }
               # Only required when bidirectional=true; enforced in SchemaAssociationValidator, not the schema.
               - column: { name: inverse_label, type: VARCHAR(255) }
+        - addUniqueConstraint:
+            tableName: schema_association
+            columnNames: internal_name
+            constraintName: uq_schema_association_internal_name
