@@ -95,3 +95,6 @@ databaseChangeLog:
               - column: { name: target_schema_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_association_target, references: schema_definition(id) } }
               - column: { name: cardinality, type: VARCHAR(30), constraints: { nullable: false } }
               - column: { name: bidirectional, type: BOOLEAN, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: forward_label, type: VARCHAR(255), constraints: { nullable: false } }
+              # Only required when bidirectional=true; enforced in SchemaAssociationValidator, not the schema.
+              - column: { name: inverse_label, type: VARCHAR(255) }

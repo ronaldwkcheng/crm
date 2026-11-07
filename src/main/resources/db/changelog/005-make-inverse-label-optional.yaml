@@ -1,9 +1,0 @@
-databaseChangeLog:
-  - changeSet:
-      id: 005-01-make-inverse-label-optional
-      author: ronald
-      changes:
-        - dropNotNullConstraint:
-            tableName: schema_association
-            columnName: inverse_label
-            columnDataType: VARCHAR(255)
