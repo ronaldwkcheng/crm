@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/001-metadata-tables.yaml
+  - include:
+      file: db/changelog/002-instance-tables.yaml
+  - include:
+      file: db/changelog/003-seed-customer-schema.yaml
+  - include:
+      file: db/changelog/004-add-association-labels.yaml
+  - include:
+      file: db/changelog/005-make-inverse-label-optional.yaml

@@ -1,0 +1,97 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-01-schema-definition
+      author: ronald
+      changes:
+        - createTable:
+            tableName: schema_definition
+            columns:
+              - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
+              - column: { name: display_name, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false, unique: true } }
+              - column: { name: summary, type: VARCHAR(255) }
+              - column: { name: description, type: VARCHAR(2000) }
+              - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+
+  - changeSet:
+      id: 001-02-enum-type-definition
+      author: ronald
+      changes:
+        - createTable:
+            tableName: enum_type_definition
+            columns:
+              - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
+              - column: { name: display_name, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false, unique: true } }
+              - column: { name: summary, type: VARCHAR(255) }
+              - column: { name: description, type: VARCHAR(2000) }
+              - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+
+  - changeSet:
+      id: 001-03-schema-property
+      author: ronald
+      changes:
+        - createTable:
+            tableName: schema_property
+            columns:
+              - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
+              - column: { name: schema_definition_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_property_schema, references: schema_definition(id) } }
+              - column: { name: display_name, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: summary, type: VARCHAR(255) }
+              - column: { name: description, type: VARCHAR(2000) }
+              - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: base_type, type: VARCHAR(30), constraints: { nullable: false } }
+              - column: { name: input_type, type: VARCHAR(30), constraints: { nullable: false } }
+              - column: { name: visibility, type: VARCHAR(30), constraints: { nullable: false } }
+              - column: { name: enum_type_definition_id, type: BIGINT, constraints: { nullable: true, foreignKeyName: fk_property_enum_type, references: enum_type_definition(id) } }
+        - addUniqueConstraint:
+            tableName: schema_property
+            columnNames: schema_definition_id, internal_name
+            constraintName: uq_property_schema_internal_name
+
+  - changeSet:
+      id: 001-04-enum-value-definition
+      author: ronald
+      changes:
+        - createTable:
+            tableName: enum_value_definition
+            columns:
+              - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
+              - column: { name: enum_type_definition_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_value_enum_type, references: enum_type_definition(id) } }
+              - column: { name: item_label, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: item_value, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: display_order, type: INT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: enum_value_definition
+            columnNames: enum_type_definition_id, item_value
+            constraintName: uq_value_enum_type_item_value
+
+  - changeSet:
+      id: 001-05-schema-association
+      author: ronald
+      changes:
+        - createTable:
+            tableName: schema_association
+            columns:
+              - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
+              - column: { name: display_name, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: internal_name, type: VARCHAR(255), constraints: { nullable: false, unique: true } }
+              - column: { name: summary, type: VARCHAR(255) }
+              - column: { name: description, type: VARCHAR(2000) }
+              - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: source_schema_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_association_source, references: schema_definition(id) } }
+              - column: { name: target_schema_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_association_target, references: schema_definition(id) } }
+              - column: { name: cardinality, type: VARCHAR(30), constraints: { nullable: false } }
+              - column: { name: bidirectional, type: BOOLEAN, defaultValueBoolean: false, constraints: { nullable: false } }

@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-01-schema-instance
+      author: ronald
+      changes:
+        - createTable:
+            tableName: schema_instance
+            columns:
+              - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
+              - column: { name: schema_definition_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_instance_schema, references: schema_definition(id) } }
+              - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+
+  - changeSet:
+      id: 002-02-instance-property-value
+      author: ronald
+      changes:
+        - createTable:
+            tableName: instance_property_value
+            columns:
+              - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
+              - column: { name: instance_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_value_instance, references: schema_instance(id) } }
+              - column: { name: property_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_value_property, references: schema_property(id) } }
+              - column: { name: string_value, type: VARCHAR(2000) }
+              - column: { name: number_value, type: "DECIMAL(20,6)" }
+              - column: { name: date_value, type: DATE }
+              - column: { name: date_time_value, type: TIMESTAMP }
+              - column: { name: time_value, type: TIME }
+              - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+        - createIndex:
+            indexName: ix_ipv_instance
+            tableName: instance_property_value
+            columns:
+              - column: { name: instance_id }
+        - createIndex:
+            indexName: ix_ipv_property_string
+            tableName: instance_property_value
+            columns:
+              - column: { name: property_id }
+              - column: { name: string_value }
+        - createIndex:
+            indexName: ix_ipv_property_number
+            tableName: instance_property_value
+            columns:
+              - column: { name: property_id }
+              - column: { name: number_value }
+        - createIndex:
+            indexName: ix_ipv_property_date
+            tableName: instance_property_value
+            columns:
+              - column: { name: property_id }
+              - column: { name: date_value }
+
+  - changeSet:
+      id: 002-03-instance-association
+      author: ronald
+      changes:
+        - createTable:
+            tableName: instance_association
+            columns:
+              - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
+              - column: { name: association_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_link_association, references: schema_association(id) } }
+              - column: { name: source_instance_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_link_source, references: schema_instance(id) } }
+              - column: { name: target_instance_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_link_target, references: schema_instance(id) } }
+              - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: instance_association
+            columnNames: association_id, source_instance_id, target_instance_id
+            constraintName: uq_link_association_source_target

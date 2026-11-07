@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-01-add-association-labels
+      author: ronald
+      changes:
+        - addColumn:
+            tableName: schema_association
+            columns:
+              - column: { name: forward_label, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: inverse_label, type: VARCHAR(255), constraints: { nullable: false } }

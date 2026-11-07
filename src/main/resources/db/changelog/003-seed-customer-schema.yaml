@@ -1,0 +1,109 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-01-seed-customer-schema
+      author: ronald
+      changes:
+        - insert:
+            tableName: schema_definition
+            columns:
+              - column: { name: id, valueNumeric: 1 }
+              - column: { name: display_name, value: "Customer" }
+              - column: { name: internal_name, value: "customer" }
+              - column: { name: summary, value: "An individual customer" }
+              - column: { name: description, value: "Pre-built reference schema representing an individual customer, modeled after Salesforce Contact and HubSpot Contact." }
+              - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: version, valueNumeric: 0 }
+        - sql:
+            sql: ALTER TABLE schema_definition ALTER COLUMN id RESTART WITH 2;
+
+  - changeSet:
+      id: 003-02-seed-customer-properties
+      author: ronald
+      changes:
+        - insert:
+            tableName: schema_property
+            columns:
+              - column: { name: id, valueNumeric: 1 }
+              - column: { name: schema_definition_id, valueNumeric: 1 }
+              - column: { name: display_name, value: "First Name" }
+              - column: { name: internal_name, value: "firstName" }
+              - column: { name: summary, value: "Customer's first name" }
+              - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: version, valueNumeric: 0 }
+              - column: { name: base_type, value: "STRING" }
+              - column: { name: input_type, value: "TEXT" }
+              - column: { name: visibility, value: "VISIBLE" }
+        - insert:
+            tableName: schema_property
+            columns:
+              - column: { name: id, valueNumeric: 2 }
+              - column: { name: schema_definition_id, valueNumeric: 1 }
+              - column: { name: display_name, value: "Last Name" }
+              - column: { name: internal_name, value: "lastName" }
+              - column: { name: summary, value: "Customer's last name" }
+              - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: version, valueNumeric: 0 }
+              - column: { name: base_type, value: "STRING" }
+              - column: { name: input_type, value: "TEXT" }
+              - column: { name: visibility, value: "VISIBLE" }
+        - insert:
+            tableName: schema_property
+            columns:
+              - column: { name: id, valueNumeric: 3 }
+              - column: { name: schema_definition_id, valueNumeric: 1 }
+              - column: { name: display_name, value: "Birth Date" }
+              - column: { name: internal_name, value: "birthDate" }
+              - column: { name: summary, value: "Customer's date of birth" }
+              - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: version, valueNumeric: 0 }
+              - column: { name: base_type, value: "DATE" }
+              - column: { name: input_type, value: "TEXT" }
+              - column: { name: visibility, value: "VISIBLE" }
+        - insert:
+            tableName: schema_property
+            columns:
+              - column: { name: id, valueNumeric: 4 }
+              - column: { name: schema_definition_id, valueNumeric: 1 }
+              - column: { name: display_name, value: "Email" }
+              - column: { name: internal_name, value: "email" }
+              - column: { name: summary, value: "Customer's email address" }
+              - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: version, valueNumeric: 0 }
+              - column: { name: base_type, value: "EMAIL" }
+              - column: { name: input_type, value: "TEXT" }
+              - column: { name: visibility, value: "VISIBLE" }
+        - insert:
+            tableName: schema_property
+            columns:
+              - column: { name: id, valueNumeric: 5 }
+              - column: { name: schema_definition_id, valueNumeric: 1 }
+              - column: { name: display_name, value: "Address" }
+              - column: { name: internal_name, value: "address" }
+              - column: { name: summary, value: "Customer's mailing address" }
+              - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: version, valueNumeric: 0 }
+              - column: { name: base_type, value: "STRING" }
+              - column: { name: input_type, value: "TEXT" }
+              - column: { name: visibility, value: "VISIBLE" }
+        - insert:
+            tableName: schema_property
+            columns:
+              - column: { name: id, valueNumeric: 6 }
+              - column: { name: schema_definition_id, valueNumeric: 1 }
+              - column: { name: display_name, value: "Phone" }
+              - column: { name: internal_name, value: "phone" }
+              - column: { name: summary, value: "Customer's phone number" }
+              - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
+              - column: { name: version, valueNumeric: 0 }
+              - column: { name: base_type, value: "PHONE_NUMBER" }
+              - column: { name: input_type, value: "TEXT" }
+              - column: { name: visibility, value: "VISIBLE" }
+        - sql:
+            sql: ALTER TABLE schema_property ALTER COLUMN id RESTART WITH 7;
