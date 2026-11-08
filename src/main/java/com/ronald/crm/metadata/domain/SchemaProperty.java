@@ -25,12 +25,8 @@ public class SchemaProperty extends NamedMetadataEntity {
     private SchemaDefinition schemaDefinition;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "base_type", nullable = false)
-    private PropertyBaseType baseType;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "input_type", nullable = false)
-    private PropertyInputType inputType;
+    @Column(name = "property_type", nullable = false)
+    private PropertyType propertyType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -39,4 +35,12 @@ public class SchemaProperty extends NamedMetadataEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enum_type_definition_id")
     private EnumTypeDefinition enumTypeDefinition;
+
+    /** The ISO 4217 currency code (e.g. "USD"); set iff {@code propertyType == PropertyType.CURRENCY}. */
+    @Column(name = "currency_code", length = 3)
+    private String currencyCode;
+
+    /** Whether an instance write must supply a non-null, non-empty value for this property. */
+    @Column(name = "is_required", nullable = false)
+    private boolean required;
 }

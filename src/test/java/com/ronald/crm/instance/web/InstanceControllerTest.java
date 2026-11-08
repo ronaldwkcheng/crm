@@ -77,7 +77,7 @@ class InstanceControllerTest {
 
     @Test
     void batchCreateReportsPartialSuccessWithoutFailingTheWholeBatch() throws Exception {
-        InstanceCreateRequest valid = new InstanceCreateRequest(Map.of("firstName", "Alice"));
+        InstanceCreateRequest valid = new InstanceCreateRequest(Map.of("firstName", "Alice", "lastName", "Wonder"));
         InstanceCreateRequest invalid = new InstanceCreateRequest(Map.of("notAProperty", "x"));
 
         mockMvc.perform(post("/api/data/customer/instances/batch/create").contentType(MediaType.APPLICATION_JSON)

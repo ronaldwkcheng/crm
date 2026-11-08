@@ -45,12 +45,36 @@ Account/Contact out of the box.
 | Concept | What it is |
 |---|---|
 | **SchemaDefinition** | An object type, e.g. "Customer" (displayName, internalName, summary, description) |
-| **SchemaProperty** | A field on a schema (displayName, internalName, summary, description, baseType, inputType, visibility) |
-| **PropertyBaseType** | `NUMBER`, `STRING`, `DATE`, `DATETIME`, `TIME`, `EMAIL`, `PHONE_NUMBER`, `ENUM` |
-| **PropertyInputType** | `TEXT`, `SELECT_SINGLE`, `SELECT_MULTIPLE` (SELECT_* only valid when baseType is `ENUM`) |
+| **SchemaProperty** | A field on a schema (displayName, internalName, summary, description, propertyType, visibility, required, currencyCode) |
+| **PropertyType** | A single field encoding both storage type and input shape — see the table below |
 | **PropertyVisibility** | `VISIBLE`, `READ_ONLY`, `HIDDEN` — enforced when writing instance data |
 | **EnumTypeDefinition** / **EnumValueDefinition** | A reusable picklist (like a Salesforce global picklist / HubSpot enumeration), with ordered `itemLabel`/`itemValue` pairs |
 | **SchemaAssociation** | A relationship between two schemas: cardinality (`ONE_TO_ONE`, `ONE_TO_MANY`, `MANY_TO_MANY`), a `bidirectional` flag, and directional labels (`forwardLabel`, e.g. "orders"; `inverseLabel`, e.g. "is ordered by" — required only when bidirectional) |
+
+`PropertyType` used to be two separate fields (`baseType` x `inputType`); they're merged into
+one, since in practice only specific combinations ever made sense. Each value fixes both the
+instance-value shape a write must supply and which `SchemaProperty` side-fields apply:
+
+| `PropertyType` | Instance value shape | `enumTypeInternalName` | `currencyCode` |
+|---|---|---|---|
+| `NUMBER` | a single number | — | — |
+| `STRING` | a single string | — | — |
+| `DATE` | a single `yyyy-MM-dd` string | — | — |
+| `TIME` | a single `HH:mm:ss` string | — | — |
+| `DATETIME` | a single ISO-8601 instant string | — | — |
+| `EMAIL` | a single string, validated as an email address | — | — |
+| `PHONE_NUMBER` | a single string, validated as a phone number | — | — |
+| `CURRENCY` | a single non-negative number with at most 2 decimal places (normalized to exactly 2, e.g. `19.5` → `19.50`) | — | **required**, a 3-letter ISO 4217 code, e.g. `USD` |
+| `SELECT_SINGLE` | a single `itemValue` of the referenced enum type | **required** | — |
+| `SELECT_MULTIPLE` | a non-empty JSON array of `itemValue`s of the referenced enum type | **required** | — |
+
+`enumTypeInternalName`/`currencyCode` are rejected (400) if supplied for a `PropertyType` that
+doesn't use them, and required (400) for the ones that do. A property can also be marked
+`required: true`: a create (or an update that explicitly touches that property) must then
+supply a non-null, non-empty value for it, enforced in `InstanceValidationService` — on create
+specifically, every `required` property must be present, since create has no notion of
+"leave the rest as they were". All of this applies identically whether the property/instance
+was written through REST or GraphQL.
 
 Every metadata entity carries `@Version` optimistic locking, `createdDate`/`lastUpdatedDate`
 auditing, and an immutable `internalName` (the API identifier) alongside an editable
@@ -58,13 +82,25 @@ auditing, and an immutable `internalName` (the API identifier) alongside an edit
 
 ### Instances (the data)
 
-Instance data is stored **EAV-style** (Entity-Attribute-Value): one `InstancePropertyValue`
-row per `(instance, property)` pair, with a typed column (`stringValue`, `numberValue`,
-`dateValue`, `dateTimeValue`, `timeValue`) populated according to the property's base type.
-This is a deliberate choice over a JSON-blob-per-record design: it lets filtering, sorting
-and aggregate reporting over *arbitrary, admin-defined* properties run as plain, indexed
-SQL instead of JSON-path queries. A `SELECT_MULTIPLE` enum property simply gets one row per
-selected value.
+Instance data is stored **EAV-style** (Entity-Attribute-Value): exactly one `InstancePropertyValue`
+row per `(instance, property)` pair, regardless of `PropertyType` — a `SELECT_MULTIPLE`
+property's selections are joined into that single row as a comma-separated string (e.g.
+`"A,B"`) rather than spread across multiple rows. The value itself is always a single
+canonical string column; `PropertyValueCodec` is the one place that knows how to validate,
+encode and decode each `PropertyType`'s canonical string form (so a `NUMBER`'s canonical form
+is its plain decimal string, a `DATE`'s is `LocalDate.toString()`, and so on).
+
+Collapsing five typed columns into one text column means a plain index on that column can no
+longer accelerate numeric/date range comparisons the way a typed column could: filtering,
+sorting and reporting with `GT`/`GTE`/`LT`/`LTE` compare a JPQL `CAST(property_value AS ...)`
+expression, chosen per the property's `PropertyType` (see `InstanceEavQuerySupport`), which a
+plain B-tree index over the raw text doesn't cover. `EQ`/`NEQ`/`CONTAINS` still compare the raw
+column directly and are unaffected. `EQ` on a `SELECT_MULTIPLE` property also only matches an
+exact full list (e.g. `"A,B"`), not "list contains A" — `CONTAINS` is the closer fit for "does
+this multi-select include this value", with the caveat that it's a plain substring match, not
+delimiter-aware. This is a deliberate simplicity-over-indexing tradeoff; a schema with
+reporting-heavy NUMBER/DATE/CURRENCY properties over a large instance table would want the old
+typed-column design back.
 
 - **SchemaInstance** — one record of a given schema
 - **InstancePropertyValue** — the EAV rows backing its property values
@@ -145,10 +181,10 @@ Base path: `/api/metadata/schemas/{schemaInternalName}/properties`
 
 | Method | Path | Body | Notes |
 |---|---|---|---|
-| POST | `/` | `SchemaPropertyCreateRequest` | `displayName`, `internalName`, `summary`, `description`, `baseType`, `inputType`, `visibility?`, `enumTypeInternalName?` (required iff `baseType=ENUM`) |
+| POST | `/` | `SchemaPropertyCreateRequest` | `displayName`, `internalName`, `summary`, `description`, `propertyType`, `visibility?`, `enumTypeInternalName?` (required iff `propertyType` is `SELECT_SINGLE`/`SELECT_MULTIPLE`), `currencyCode?` (required iff `propertyType=CURRENCY`), `required?` |
 | GET | `/` | — | list (not paginated) |
 | GET | `/{propertyInternalName}` | — | |
-| PUT | `/{propertyInternalName}` | `SchemaPropertyUpdateRequest` | `displayName`, `summary`, `description`, `visibility`, `version` — `baseType`/`inputType`/enum type are immutable after creation |
+| PUT | `/{propertyInternalName}` | `SchemaPropertyUpdateRequest` | `displayName`, `summary`, `description`, `visibility`, `required`, `version` — `propertyType`/enum type/`currencyCode` are immutable after creation |
 | DELETE | `/{propertyInternalName}` | — | 409 if instance data exists for this property |
 | POST | `/batch/create` | `SchemaPropertyCreateRequest[]` | |
 | POST | `/batch/update` | `{internalName, request}[]` | |
@@ -248,8 +284,8 @@ a single value.
 ```
 
 `aggregate` is one of `COUNT, SUM, AVG, MIN, MAX` (default `COUNT`). `SUM`/`AVG`/`MIN`/`MAX`
-require `aggregateProperty` to be a `NUMBER` property; `COUNT` ignores it. Response is a list
-of `{ "groupValue": ..., "aggregateValue": ... }` rows.
+require `aggregateProperty` to be a `NUMBER` or `CURRENCY` property; `COUNT` ignores it.
+Response is a list of `{ "groupValue": ..., "aggregateValue": ... }` rows.
 
 ### Instance associations
 
@@ -349,14 +385,14 @@ a simple key-based cache to help. Where one resource's cached response embeds an
 
 Seeded via Liquibase (`src/main/resources/db/changelog/003-seed-customer-schema.yaml`):
 
-| Property | internalName | baseType |
-|---|---|---|
-| First Name | `firstName` | STRING |
-| Last Name | `lastName` | STRING |
-| Birth Date | `birthDate` | DATE |
-| Email | `email` | EMAIL |
-| Address | `address` | STRING |
-| Phone | `phone` | PHONE_NUMBER |
+| Property | internalName | propertyType | required |
+|---|---|---|---|
+| First Name | `firstName` | STRING | yes |
+| Last Name | `lastName` | STRING | yes |
+| Birth Date | `birthDate` | DATE | no |
+| Email | `email` | EMAIL | no |
+| Address | `address` | STRING | no |
+| Phone | `phone` | PHONE_NUMBER | no |
 
 ```bash
 curl -X POST http://localhost:8080/api/data/customer/instances \

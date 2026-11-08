@@ -19,10 +19,11 @@ public class SchemaPropertyAssembler {
         property.setInternalName(request.internalName());
         property.setSummary(request.summary());
         property.setDescription(request.description());
-        property.setBaseType(request.baseType());
-        property.setInputType(request.inputType());
+        property.setPropertyType(request.propertyType());
         property.setVisibility(request.visibility() != null ? request.visibility() : PropertyVisibility.VISIBLE);
         property.setEnumTypeDefinition(enumType);
+        property.setCurrencyCode(request.currencyCode());
+        property.setRequired(request.required() != null && request.required());
         return property;
     }
 
@@ -31,6 +32,7 @@ public class SchemaPropertyAssembler {
         property.setSummary(request.summary());
         property.setDescription(request.description());
         property.setVisibility(request.visibility());
+        property.setRequired(request.required());
     }
 
     public SchemaPropertyResponse toResponse(SchemaProperty property) {
@@ -44,9 +46,10 @@ public class SchemaPropertyAssembler {
                 property.getCreatedDate(),
                 property.getLastUpdatedDate(),
                 property.getVersion(),
-                property.getBaseType(),
-                property.getInputType(),
+                property.getPropertyType(),
                 property.getVisibility(),
-                enumType != null ? enumType.getInternalName() : null);
+                enumType != null ? enumType.getInternalName() : null,
+                property.getCurrencyCode(),
+                property.isRequired());
     }
 }

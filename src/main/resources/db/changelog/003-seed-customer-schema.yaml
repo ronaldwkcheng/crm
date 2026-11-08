@@ -32,9 +32,9 @@ databaseChangeLog:
               - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: version, valueNumeric: 0 }
-              - column: { name: base_type, value: "STRING" }
-              - column: { name: input_type, value: "TEXT" }
+              - column: { name: property_type, value: "STRING" }
               - column: { name: visibility, value: "VISIBLE" }
+              - column: { name: is_required, valueBoolean: true }
         - insert:
             tableName: schema_property
             columns:
@@ -46,9 +46,9 @@ databaseChangeLog:
               - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: version, valueNumeric: 0 }
-              - column: { name: base_type, value: "STRING" }
-              - column: { name: input_type, value: "TEXT" }
+              - column: { name: property_type, value: "STRING" }
               - column: { name: visibility, value: "VISIBLE" }
+              - column: { name: is_required, valueBoolean: true }
         - insert:
             tableName: schema_property
             columns:
@@ -60,8 +60,7 @@ databaseChangeLog:
               - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: version, valueNumeric: 0 }
-              - column: { name: base_type, value: "DATE" }
-              - column: { name: input_type, value: "TEXT" }
+              - column: { name: property_type, value: "DATE" }
               - column: { name: visibility, value: "VISIBLE" }
         - insert:
             tableName: schema_property
@@ -74,8 +73,7 @@ databaseChangeLog:
               - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: version, valueNumeric: 0 }
-              - column: { name: base_type, value: "EMAIL" }
-              - column: { name: input_type, value: "TEXT" }
+              - column: { name: property_type, value: "EMAIL" }
               - column: { name: visibility, value: "VISIBLE" }
         - insert:
             tableName: schema_property
@@ -88,8 +86,7 @@ databaseChangeLog:
               - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: version, valueNumeric: 0 }
-              - column: { name: base_type, value: "STRING" }
-              - column: { name: input_type, value: "TEXT" }
+              - column: { name: property_type, value: "STRING" }
               - column: { name: visibility, value: "VISIBLE" }
         - insert:
             tableName: schema_property
@@ -102,8 +99,7 @@ databaseChangeLog:
               - column: { name: created_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: last_updated_date, valueComputed: CURRENT_TIMESTAMP }
               - column: { name: version, valueNumeric: 0 }
-              - column: { name: base_type, value: "PHONE_NUMBER" }
-              - column: { name: input_type, value: "TEXT" }
+              - column: { name: property_type, value: "PHONE_NUMBER" }
               - column: { name: visibility, value: "VISIBLE" }
         - sql:
             sql: ALTER TABLE schema_property ALTER COLUMN id RESTART WITH 7;

@@ -41,8 +41,8 @@ public class SchemaPropertyService {
     public SchemaPropertyResponse create(String schemaInternalName, SchemaPropertyCreateRequest request) {
         SchemaDefinition schema = schemaDefinitionService.findByInternalNameOrThrow(schemaInternalName);
         schemaPropertyValidator.validateCreate(schema, request);
-        EnumTypeDefinition enumType = schemaPropertyValidator.resolveEnumType(
-                request.baseType(), request.inputType(), request.enumTypeInternalName());
+        EnumTypeDefinition enumType = schemaPropertyValidator.resolveEnumType(request.propertyType(), request.enumTypeInternalName());
+        schemaPropertyValidator.resolveCurrencyCode(request.propertyType(), request.currencyCode());
         SchemaProperty property = schemaPropertyAssembler.toEntity(schema, request, enumType);
         return schemaPropertyAssembler.toResponse(schemaPropertyRepository.save(property));
     }

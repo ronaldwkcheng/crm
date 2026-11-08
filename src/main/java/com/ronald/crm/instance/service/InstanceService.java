@@ -46,7 +46,7 @@ public class InstanceService {
         instance = schemaInstanceRepository.save(instance);
 
         List<InstancePropertyValue> values = instanceValidationService.validateAndBuildValues(
-                schema, properties, instance, request.properties());
+                schema, properties, instance, request.properties(), true);
         instancePropertyValueRepository.saveAll(values);
 
         return toResponse(schema, instance, values);
@@ -92,7 +92,7 @@ public class InstanceService {
         List<SchemaProperty> properties = schemaPropertyRepository.findBySchemaDefinition(schema);
 
         List<InstancePropertyValue> newValues = instanceValidationService.validateAndBuildValues(
-                schema, properties, instance, request.properties());
+                schema, properties, instance, request.properties(), false);
 
         Map<String, SchemaProperty> byInternalName = properties.stream()
                 .collect(Collectors.toMap(SchemaProperty::getInternalName, p -> p));

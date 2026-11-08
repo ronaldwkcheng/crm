@@ -26,7 +26,7 @@ class InstanceServiceVersionTest {
 
     @Test
     void updatingPropertyValuesBumpsInstanceVersionAndPersistsIt() {
-        InstanceResponse created = instanceService.create("customer", new InstanceCreateRequest(Map.of("firstName", "Jane")));
+        InstanceResponse created = instanceService.create("customer", new InstanceCreateRequest(Map.of("firstName", "Jane", "lastName", "Doe")));
         assertThat(created.version()).isEqualTo(0L);
 
         InstanceResponse updated = instanceService.update("customer", created.id(),
@@ -41,7 +41,7 @@ class InstanceServiceVersionTest {
 
     @Test
     void updatingWithStaleVersionIsRejected() {
-        InstanceResponse created = instanceService.create("customer", new InstanceCreateRequest(Map.of("firstName", "Jane")));
+        InstanceResponse created = instanceService.create("customer", new InstanceCreateRequest(Map.of("firstName", "Jane", "lastName", "Doe")));
         instanceService.update("customer", created.id(), new InstanceUpdateRequest(Map.of("lastName", "Smith"), 0L));
 
         assertThatThrownBy(() -> instanceService.update("customer", created.id(),
