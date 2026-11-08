@@ -1,0 +1,319 @@
+scalar Long
+scalar DateTime
+scalar JSON
+
+type Query {
+    schema(internalName: String!): SchemaDefinition
+    schemas(page: Int = 0, size: Int = 20): SchemaDefinitionPage!
+    property(schemaInternalName: String!, internalName: String!): SchemaProperty
+
+    enumType(internalName: String!): EnumType
+    enumTypes(page: Int = 0, size: Int = 20): EnumTypePage!
+
+    association(internalName: String!): SchemaAssociation
+    associations(page: Int = 0, size: Int = 20): SchemaAssociationPage!
+
+    instance(schemaInternalName: String!, id: ID!): Instance
+    instances(schemaInternalName: String!, page: Int = 0, size: Int = 20): InstancePage!
+    searchInstances(
+        schemaInternalName: String!
+        filters: [InstanceFilterInput!]
+        sort: [InstanceSortInput!]
+        page: Int = 0
+        size: Int = 20
+    ): InstancePage!
+    instanceReport(schemaInternalName: String!, input: InstanceReportInput!): [InstanceReportRow!]!
+    linkedInstances(schemaInternalName: String!, id: ID!, associationInternalName: String!): [Instance!]!
+}
+
+type Mutation {
+    createSchema(input: SchemaDefinitionInput!): SchemaDefinition!
+    updateSchema(internalName: String!, input: SchemaDefinitionUpdateInput!): SchemaDefinition!
+    deleteSchema(internalName: String!): Boolean!
+
+    createProperty(schemaInternalName: String!, input: SchemaPropertyInput!): SchemaProperty!
+    updateProperty(schemaInternalName: String!, internalName: String!, input: SchemaPropertyUpdateInput!): SchemaProperty!
+    deleteProperty(schemaInternalName: String!, internalName: String!): Boolean!
+
+    createEnumType(input: EnumTypeInput!): EnumType!
+    updateEnumType(internalName: String!, input: EnumTypeUpdateInput!): EnumType!
+    deleteEnumType(internalName: String!): Boolean!
+
+    createEnumValue(enumTypeInternalName: String!, input: EnumValueInput!): EnumValue!
+    updateEnumValue(enumTypeInternalName: String!, itemValue: String!, input: EnumValueUpdateInput!): EnumValue!
+    deleteEnumValue(enumTypeInternalName: String!, itemValue: String!): Boolean!
+
+    createAssociation(input: SchemaAssociationInput!): SchemaAssociation!
+    updateAssociation(internalName: String!, input: SchemaAssociationUpdateInput!): SchemaAssociation!
+    deleteAssociation(internalName: String!): Boolean!
+
+    createInstance(schemaInternalName: String!, properties: JSON!): Instance!
+    updateInstance(schemaInternalName: String!, id: ID!, properties: JSON!, version: Long!): Instance!
+    deleteInstance(schemaInternalName: String!, id: ID!): Boolean!
+
+    linkInstances(schemaInternalName: String!, id: ID!, associationInternalName: String!, targetInstanceId: ID!): Boolean!
+    unlinkInstances(schemaInternalName: String!, id: ID!, associationInternalName: String!, targetInstanceId: ID!): Boolean!
+}
+
+type SchemaDefinition {
+    id: ID!
+    displayName: String!
+    internalName: String!
+    summary: String
+    description: String
+    createdDate: DateTime!
+    lastUpdatedDate: DateTime!
+    version: Long!
+    properties: [SchemaProperty!]!
+}
+
+type SchemaDefinitionPage {
+    content: [SchemaDefinition!]!
+    totalElements: Long!
+    totalPages: Int!
+    number: Int!
+    size: Int!
+}
+
+type SchemaProperty {
+    id: ID!
+    displayName: String!
+    internalName: String!
+    summary: String
+    description: String
+    createdDate: DateTime!
+    lastUpdatedDate: DateTime!
+    version: Long!
+    baseType: PropertyBaseType!
+    inputType: PropertyInputType!
+    visibility: PropertyVisibility!
+    enumTypeInternalName: String
+}
+
+enum PropertyBaseType {
+    NUMBER
+    STRING
+    DATE
+    DATETIME
+    TIME
+    EMAIL
+    PHONE_NUMBER
+    ENUM
+}
+
+enum PropertyInputType {
+    TEXT
+    SELECT_SINGLE
+    SELECT_MULTIPLE
+}
+
+enum PropertyVisibility {
+    VISIBLE
+    READ_ONLY
+    HIDDEN
+}
+
+type EnumType {
+    id: ID!
+    displayName: String!
+    internalName: String!
+    summary: String
+    description: String
+    createdDate: DateTime!
+    lastUpdatedDate: DateTime!
+    version: Long!
+    values: [EnumValue!]!
+}
+
+type EnumTypePage {
+    content: [EnumType!]!
+    totalElements: Long!
+    totalPages: Int!
+    number: Int!
+    size: Int!
+}
+
+type EnumValue {
+    id: ID!
+    itemLabel: String!
+    itemValue: String!
+    displayOrder: Int
+    createdDate: DateTime!
+    lastUpdatedDate: DateTime!
+    version: Long!
+}
+
+type SchemaAssociation {
+    id: ID!
+    displayName: String!
+    internalName: String!
+    summary: String
+    description: String
+    createdDate: DateTime!
+    lastUpdatedDate: DateTime!
+    version: Long!
+    sourceSchemaInternalName: String!
+    targetSchemaInternalName: String!
+    cardinality: AssociationCardinality!
+    bidirectional: Boolean!
+    forwardLabel: String!
+    inverseLabel: String
+}
+
+enum AssociationCardinality {
+    ONE_TO_ONE
+    ONE_TO_MANY
+    MANY_TO_MANY
+}
+
+type SchemaAssociationPage {
+    content: [SchemaAssociation!]!
+    totalElements: Long!
+    totalPages: Int!
+    number: Int!
+    size: Int!
+}
+
+type Instance {
+    id: ID!
+    schemaInternalName: String!
+    createdDate: DateTime!
+    lastUpdatedDate: DateTime!
+    version: Long!
+    properties: JSON!
+}
+
+type InstancePage {
+    content: [Instance!]!
+    totalElements: Long!
+    totalPages: Int!
+    number: Int!
+    size: Int!
+}
+
+type InstanceReportRow {
+    groupValue: JSON
+    aggregateValue: JSON
+}
+
+input SchemaDefinitionInput {
+    displayName: String!
+    internalName: String!
+    summary: String
+    description: String
+}
+
+input SchemaDefinitionUpdateInput {
+    displayName: String!
+    summary: String
+    description: String
+    version: Long!
+}
+
+input SchemaPropertyInput {
+    displayName: String!
+    internalName: String!
+    summary: String
+    description: String
+    baseType: PropertyBaseType!
+    inputType: PropertyInputType!
+    visibility: PropertyVisibility
+    enumTypeInternalName: String
+}
+
+input SchemaPropertyUpdateInput {
+    displayName: String!
+    summary: String
+    description: String
+    visibility: PropertyVisibility!
+    version: Long!
+}
+
+input EnumTypeInput {
+    displayName: String!
+    internalName: String!
+    summary: String
+    description: String
+}
+
+input EnumTypeUpdateInput {
+    displayName: String!
+    summary: String
+    description: String
+    version: Long!
+}
+
+input EnumValueInput {
+    itemLabel: String!
+    itemValue: String!
+    displayOrder: Int
+}
+
+input EnumValueUpdateInput {
+    itemLabel: String!
+    displayOrder: Int
+    version: Long!
+}
+
+input SchemaAssociationInput {
+    displayName: String!
+    internalName: String!
+    summary: String
+    description: String
+    sourceSchemaInternalName: String!
+    targetSchemaInternalName: String!
+    cardinality: AssociationCardinality!
+    bidirectional: Boolean!
+    forwardLabel: String!
+    inverseLabel: String
+}
+
+input SchemaAssociationUpdateInput {
+    displayName: String!
+    summary: String
+    description: String
+    forwardLabel: String!
+    inverseLabel: String
+    version: Long!
+}
+
+input InstanceFilterInput {
+    property: String!
+    operator: FilterOperator!
+    value: JSON!
+}
+
+enum FilterOperator {
+    EQ
+    NEQ
+    GT
+    GTE
+    LT
+    LTE
+    CONTAINS
+}
+
+input InstanceSortInput {
+    property: String!
+    direction: SortDirection!
+}
+
+enum SortDirection {
+    ASC
+    DESC
+}
+
+input InstanceReportInput {
+    groupByProperty: String!
+    aggregate: AggregateFunction
+    aggregateProperty: String
+    filters: [InstanceFilterInput!]
+}
+
+enum AggregateFunction {
+    COUNT
+    SUM
+    AVG
+    MIN
+    MAX
+}

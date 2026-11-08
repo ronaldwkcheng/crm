@@ -2,9 +2,11 @@
 
 A metadata-driven CRM backend, built the way Salesforce and HubSpot model their object
 systems: **schemas, properties, property types and associations are themselves data**,
-configured through a REST API, not hard-coded Java classes. End users then create and
-query **instances** of those schemas (actual records) through a second, generic REST API
-that works for any schema without writing new code per object type.
+configured through an API, not hard-coded Java classes. End users then create and query
+**instances** of those schemas (actual records) through a second, generic API that works
+for any schema without writing new code per object type. Both the metadata and instance
+APIs are exposed twice, over the same service layer: as **REST** (`/api/...`) and as
+**GraphQL** (`/graphql`).
 
 A **Customer** schema (firstName, lastName, birthDate, email, address, phone) ships
 pre-seeded via Liquibase as the reference example, the way Salesforce ships
@@ -12,10 +14,10 @@ Account/Contact out of the box.
 
 ## Tech stack
 
-- Java 25, Spring Boot 4.1.2 (Web MVC, Data JPA, Validation, Cache)
+- Java 25, Spring Boot 4.1.2 (Web MVC, Data JPA, Validation, Cache, GraphQL)
 - H2 (in-memory), Liquibase for schema migrations and seed data
 - Caffeine (via Spring Cache) for the metadata layer
-- springdoc-openapi for Swagger UI
+- springdoc-openapi for Swagger UI; GraphiQL for the GraphQL API
 - JUnit 5, AssertJ, MockMvc
 
 ## Getting started
@@ -24,9 +26,11 @@ Account/Contact out of the box.
 ./gradlew bootRun
 ```
 
-- API base URL: `http://localhost:8080`
+- REST API base URL: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI spec: `http://localhost:8080/v3/api-docs`
+- GraphQL endpoint: `http://localhost:8080/graphql`
+- GraphiQL (interactive GraphQL IDE): `http://localhost:8080/graphiql`
 - H2 console: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:crmdb`, user `sa`, no password)
 
 ```bash
@@ -78,11 +82,14 @@ com.ronald.crm
 │   ├── assembler     DTO <-> entity mapping beans (one per resource)
 │   ├── service       orchestration: fetch -> validate -> assemble -> persist (+ caching)
 │   └── web           controllers + request/response DTOs
-└── instance
-    ├── domain        SchemaInstance, InstancePropertyValue (EAV), InstanceAssociation
-    ├── repository
-    ├── service        validation, EAV <-> Map mapping, CRUD, filter/sort query, reporting, associations
-    └── web            controllers + request/response DTOs
+├── instance
+│   ├── domain        SchemaInstance, InstancePropertyValue (EAV), InstanceAssociation
+│   ├── repository
+│   ├── service        validation, EAV <-> Map mapping, CRUD, filter/sort query, reporting, associations
+│   └── web            controllers + request/response DTOs
+└── graphql           GraphQL controllers (@QueryMapping/@MutationMapping) over the same
+                      metadata/instance services, custom Long/DateTime/JSON scalars, and the
+                      GraphQL exception mapping — see "GraphQL API" below
 ```
 
 ## REST API
@@ -260,6 +267,66 @@ For a `bidirectional` association, both the source and target schema's instance 
 navigate it by the same `associationInternalName`; for a one-directional association, only
 the source schema's instance path can.
 
+## GraphQL API
+
+A single endpoint, `POST /graphql` (GraphiQL at `/graphiql`), backed by Spring for GraphQL
+and the schema at `src/main/resources/graphql/schema.graphqls`. Every resolver delegates to
+the exact same `@Service` beans as the REST controllers (`SchemaDefinitionService`,
+`InstanceQueryService`, etc.) — there is no separate GraphQL business logic, so the two APIs
+can never drift in behavior, only in transport shape. Where a GraphQL input type's fields
+match an existing REST request record (e.g. `SchemaDefinitionInput` ~ `SchemaDefinitionCreateRequest`),
+Spring binds the GraphQL argument straight onto that same Java record — there's no parallel
+set of GraphQL-only request classes to maintain.
+
+**Custom scalars** (GraphQL has no built-in equivalents):
+
+| Scalar | Maps to | Used for |
+|---|---|---|
+| `Long` | `java.lang.Long` | ids, `@Version` fields |
+| `DateTime` | `java.time.Instant` (ISO-8601 string on the wire) | `createdDate`, `lastUpdatedDate` |
+| `JSON` | arbitrary `Map`/`List`/scalar | instance `properties`, filter/report `value`s — anything shaped by runtime metadata rather than a fixed type |
+
+**Queries**: `schema`, `schemas`, `property`, `enumType`, `enumTypes`, `association`,
+`associations`, `instance`, `instances`, `searchInstances` (filter + sort, the GraphQL
+equivalent of REST's `/query`), `instanceReport` (group-by + aggregate, equivalent of
+`/reports`), `linkedInstances`.
+
+**Mutations**: `create`/`update`/`delete` for `Schema`, `Property`, `EnumType`, `EnumValue`
+and `Association`, plus `createInstance`/`updateInstance`/`deleteInstance` and
+`linkInstances`/`unlinkInstances`. There is no GraphQL equivalent of REST's `batch/*`
+endpoints — those remain REST-only; GraphQL already lets a client batch independent
+mutations into one request via aliases.
+
+Example — create a Customer instance, then query it back:
+
+```graphql
+mutation {
+  createInstance(schemaInternalName: "customer", properties: {
+    firstName: "Jane", lastName: "Doe", email: "jane@example.com"
+  }) {
+    id
+    version
+    properties
+  }
+}
+
+query {
+  searchInstances(schemaInternalName: "customer",
+      filters: [{ property: "email", operator: EQ, value: "jane@example.com" }]) {
+    totalElements
+    content { id properties }
+  }
+}
+```
+
+**Errors**: GraphQL responses are always `200 OK`; failures appear in the response's
+`errors[]` array instead of an HTTP status. `GraphQlExceptionResolver` maps the same
+exceptions `GlobalExceptionHandler` maps for REST, using Spring GraphQL's `errorType`
+(`NOT_FOUND`, `BAD_REQUEST`) plus an `extensions.classification` of `CONFLICT` for
+duplicate-name, cardinality, and stale-`version` failures (GraphQL has no 409 equivalent)
+and an `extensions.details` list for multi-message validation failures, mirroring the REST
+`ApiError` shape as closely as the transport allows.
+
 ## Optimistic locking
 
 Every entity carries a `@Version`. Update requests must include the `version` read from the
@@ -272,7 +339,8 @@ rather than relying on JPA's automatic dirty-checking.
 
 The metadata layer (schemas, properties, enum types/values, associations) is cached
 in-process with Caffeine via Spring Cache (`@Cacheable`/`@CachePut`/`@CacheEvict`), since
-it's read on nearly every instance operation but changes rarely. Instance data itself is
+it's read on nearly every instance operation but changes rarely. The cache lives on the
+service layer, so REST and GraphQL requests for the same resource share one cache entry. Instance data itself is
 never cached — it's high volume and its read patterns (filters, reports) are too varied for
 a simple key-based cache to help. Where one resource's cached response embeds another's data
 (e.g. a schema's response embeds its properties), the owning write path evicts both caches.
@@ -304,3 +372,4 @@ curl -X POST http://localhost:8080/api/data/customer/instances \
 * [Liquibase migrations in Spring Boot](https://docs.spring.io/spring-boot/4.1.2/how-to/data-initialization.html#howto.data-initialization.migration-tool.liquibase)
 * [Spring Cache abstraction](https://docs.spring.io/spring-framework/reference/integration/cache.html)
 * [SpringDoc OpenAPI](https://springdoc.org/)
+* [Spring for GraphQL](https://docs.spring.io/spring-graphql/reference/)
