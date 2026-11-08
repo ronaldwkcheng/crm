@@ -1,7 +1,6 @@
 package com.ronald.crm.metadata.web.dto;
 
-import com.ronald.crm.metadata.domain.PropertyBaseType;
-import com.ronald.crm.metadata.domain.PropertyInputType;
+import com.ronald.crm.metadata.domain.PropertyType;
 import com.ronald.crm.metadata.domain.PropertyVisibility;
 import java.time.Instant;
 
@@ -14,8 +13,9 @@ public record SchemaPropertyResponse(
         Instant createdDate,
         Instant lastUpdatedDate,
         Long version,
-        PropertyBaseType baseType,
-        PropertyInputType inputType,
+        PropertyType propertyType,
         PropertyVisibility visibility,
-        String enumTypeInternalName) {
+        String enumTypeInternalName,
+        String currencyCode,
+        boolean required) {
 }

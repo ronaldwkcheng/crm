@@ -5,7 +5,7 @@ import com.ronald.crm.instance.web.dto.AggregateFunction;
 import com.ronald.crm.instance.web.dto.InstanceFilter;
 import com.ronald.crm.instance.web.dto.InstanceReportRequest;
 import com.ronald.crm.instance.web.dto.InstanceReportRow;
-import com.ronald.crm.metadata.domain.PropertyBaseType;
+import com.ronald.crm.metadata.domain.PropertyType;
 import com.ronald.crm.metadata.domain.SchemaDefinition;
 import com.ronald.crm.metadata.domain.SchemaProperty;
 import com.ronald.crm.metadata.repository.SchemaPropertyRepository;
@@ -37,31 +37,32 @@ public class InstanceReportingService {
                 .collect(Collectors.toMap(SchemaProperty::getInternalName, p -> p));
 
         SchemaProperty groupProperty = querySupport.requireProperty(propertiesByName, request.groupByProperty());
-        String groupColumn = querySupport.valueColumn(groupProperty.getBaseType());
+        String groupColumn = querySupport.valueExpression("g", groupProperty);
 
         AggregateFunction aggregate = request.aggregate() != null ? request.aggregate() : AggregateFunction.COUNT;
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("groupPid", groupProperty.getId());
 
-        StringBuilder jpql = new StringBuilder("SELECT g.").append(groupColumn).append(", ");
+        StringBuilder jpql = new StringBuilder("SELECT ").append(groupColumn).append(", ");
         StringBuilder from = new StringBuilder("FROM SchemaInstance i JOIN InstancePropertyValue g ON g.instance = i AND g.property.id = :groupPid ");
 
         if (aggregate == AggregateFunction.COUNT) {
             jpql.append("COUNT(DISTINCT i.id) ");
         } else {
             SchemaProperty aggregateProperty = querySupport.requireProperty(propertiesByName, request.aggregateProperty());
-            if (aggregateProperty.getBaseType() != PropertyBaseType.NUMBER) {
-                throw new ValidationException("Aggregate property must be a NUMBER property: " + request.aggregateProperty());
+            PropertyType aggregateType = aggregateProperty.getPropertyType();
+            if (aggregateType != PropertyType.NUMBER && aggregateType != PropertyType.CURRENCY) {
+                throw new ValidationException("Aggregate property must be a NUMBER or CURRENCY property: " + request.aggregateProperty());
             }
             from.append("LEFT JOIN InstancePropertyValue a ON a.instance = i AND a.property.id = :aggPid ");
             params.put("aggPid", aggregateProperty.getId());
-            jpql.append(aggregate).append("(a.numberValue) ");
+            jpql.append(aggregate).append("(").append(querySupport.valueExpression("a", aggregateProperty)).append(") ");
         }
 
         List<InstanceFilter> filters = request.filters() != null ? request.filters() : List.of();
         querySupport.appendFilterJoins(from, filters, propertiesByName, params);
 
-        String fullJpql = jpql + from.toString() + "WHERE i.schemaDefinition.id = :schemaId GROUP BY g." + groupColumn;
+        String fullJpql = jpql + from.toString() + "WHERE i.schemaDefinition.id = :schemaId GROUP BY " + groupColumn;
         params.put("schemaId", schema.getId());
 
         Query query = entityManager.createQuery(fullJpql);

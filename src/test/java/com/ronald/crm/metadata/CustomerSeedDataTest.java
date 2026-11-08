@@ -2,7 +2,7 @@ package com.ronald.crm.metadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.ronald.crm.metadata.domain.PropertyBaseType;
+import com.ronald.crm.metadata.domain.PropertyType;
 import com.ronald.crm.metadata.domain.SchemaDefinition;
 import com.ronald.crm.metadata.domain.SchemaProperty;
 import com.ronald.crm.metadata.repository.SchemaDefinitionRepository;
@@ -31,15 +31,26 @@ class CustomerSeedDataTest {
         assertThat(customer.getDisplayName()).isEqualTo("Customer");
 
         List<SchemaProperty> properties = schemaPropertyRepository.findBySchemaDefinition(customer);
-        Map<String, PropertyBaseType> typesByName = properties.stream()
-                .collect(Collectors.toMap(SchemaProperty::getInternalName, SchemaProperty::getBaseType));
+        Map<String, PropertyType> typesByName = properties.stream()
+                .collect(Collectors.toMap(SchemaProperty::getInternalName, SchemaProperty::getPropertyType));
 
         assertThat(typesByName).containsOnly(
-                Map.entry("firstName", PropertyBaseType.STRING),
-                Map.entry("lastName", PropertyBaseType.STRING),
-                Map.entry("birthDate", PropertyBaseType.DATE),
-                Map.entry("email", PropertyBaseType.EMAIL),
-                Map.entry("address", PropertyBaseType.STRING),
-                Map.entry("phone", PropertyBaseType.PHONE_NUMBER));
+                Map.entry("firstName", PropertyType.STRING),
+                Map.entry("lastName", PropertyType.STRING),
+                Map.entry("birthDate", PropertyType.DATE),
+                Map.entry("email", PropertyType.EMAIL),
+                Map.entry("address", PropertyType.STRING),
+                Map.entry("phone", PropertyType.PHONE_NUMBER));
+    }
+
+    @Test
+    void firstAndLastNameAreSeededAsRequired() {
+        SchemaDefinition customer = schemaDefinitionRepository.findByInternalName("customer").orElseThrow();
+        Map<String, Boolean> requiredByName = schemaPropertyRepository.findBySchemaDefinition(customer).stream()
+                .collect(Collectors.toMap(SchemaProperty::getInternalName, SchemaProperty::isRequired));
+
+        assertThat(requiredByName.get("firstName")).isTrue();
+        assertThat(requiredByName.get("lastName")).isTrue();
+        assertThat(requiredByName.get("email")).isFalse();
     }
 }

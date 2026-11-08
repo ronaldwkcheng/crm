@@ -27,11 +27,11 @@ databaseChangeLog:
               - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true } }
               - column: { name: instance_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_value_instance, references: schema_instance(id) } }
               - column: { name: property_id, type: BIGINT, constraints: { nullable: false, foreignKeyName: fk_value_property, references: schema_property(id) } }
-              - column: { name: string_value, type: VARCHAR(2000) }
-              - column: { name: number_value, type: "DECIMAL(20,6)" }
-              - column: { name: date_value, type: DATE }
-              - column: { name: date_time_value, type: TIMESTAMP }
-              - column: { name: time_value, type: TIME }
+              # Single canonical-string column for every property type (see InstancePropertyValue's
+              # javadoc); a SELECT_MULTIPLE property's selections are comma-joined into one row here
+              # rather than spread across multiple rows. Named property_value, not value: VALUE is a
+              # reserved word in H2 (and several other SQL dialects).
+              - column: { name: property_value, type: VARCHAR(4000), constraints: { nullable: false } }
               - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
@@ -43,24 +43,16 @@ databaseChangeLog:
             columns:
               - column: { name: instance_id }
               - column: { name: property_id }
+        # Supports EQ filters and the (property_id, property_value) lookup pattern. Filters/sorts/reports
+        # using GT/GTE/LT/LTE compare a CAST(property_value AS ...) expression (see InstanceEavQuerySupport),
+        # which this plain index on the raw text column cannot accelerate - a deliberate simplicity/index
+        # tradeoff that comes with collapsing 5 typed columns into 1.
         - createIndex:
-            indexName: ix_ipv_property_string
+            indexName: ix_ipv_property_value
             tableName: instance_property_value
             columns:
               - column: { name: property_id }
-              - column: { name: string_value }
-        - createIndex:
-            indexName: ix_ipv_property_number
-            tableName: instance_property_value
-            columns:
-              - column: { name: property_id }
-              - column: { name: number_value }
-        - createIndex:
-            indexName: ix_ipv_property_date
-            tableName: instance_property_value
-            columns:
-              - column: { name: property_id }
-              - column: { name: date_value }
+              - column: { name: property_value }
 
   - changeSet:
       id: 002-03-instance-association

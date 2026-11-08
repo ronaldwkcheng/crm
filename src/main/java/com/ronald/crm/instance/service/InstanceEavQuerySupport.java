@@ -3,14 +3,22 @@ package com.ronald.crm.instance.service;
 import com.ronald.crm.common.exception.ValidationException;
 import com.ronald.crm.instance.web.dto.FilterOperator;
 import com.ronald.crm.instance.web.dto.InstanceFilter;
-import com.ronald.crm.metadata.domain.PropertyBaseType;
 import com.ronald.crm.metadata.domain.SchemaProperty;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** Shared JPQL fragment builder for the EAV queries behind instance filtering, sorting and reporting. */
+/**
+ * Shared JPQL fragment builder for the EAV queries behind instance filtering, sorting and reporting.
+ * Every instance value is stored as plain text (see {@link com.ronald.crm.instance.domain.InstancePropertyValue}),
+ * so a type-aware comparison (numeric, chronological) goes through a JPQL {@code CAST(value AS ...)}
+ * driven by the property's {@code PropertyType}; a bound parameter is coerced to the matching Java
+ * type the same way, via {@link PropertyValueCodec#parseFilterValue}. {@code CONTAINS} always compares
+ * the raw text column, regardless of type, since a LIKE match only makes sense on text.
+ */
 @Component
+@RequiredArgsConstructor
 public class InstanceEavQuerySupport {
 
     private static final Map<FilterOperator, String> SQL_OPERATORS = Map.of(
@@ -21,6 +29,8 @@ public class InstanceEavQuerySupport {
             FilterOperator.LT, "<",
             FilterOperator.LTE, "<=");
 
+    private final PropertyValueCodec codec;
+
     public SchemaProperty requireProperty(Map<String, SchemaProperty> propertiesByName, String name) {
         SchemaProperty property = propertiesByName.get(name);
         if (property == null) {
@@ -29,14 +39,10 @@ public class InstanceEavQuerySupport {
         return property;
     }
 
-    public String valueColumn(PropertyBaseType baseType) {
-        return switch (baseType) {
-            case STRING, EMAIL, PHONE_NUMBER, ENUM -> "stringValue";
-            case NUMBER -> "numberValue";
-            case DATE -> "dateValue";
-            case DATETIME -> "dateTimeValue";
-            case TIME -> "timeValue";
-        };
+    /** The JPQL expression to compare/sort/group {@code alias}'s value by, type-cast per the property's PropertyType. */
+    public String valueExpression(String alias, SchemaProperty property) {
+        String castType = codec.castTargetType(property.getPropertyType());
+        return castType == null ? alias + ".value" : "cast(" + alias + ".value as " + castType + ")";
     }
 
     /** Appends one JOIN per filter (aliased f0, f1, ...) to {@code jpql} and fills {@code params}. */
@@ -46,21 +52,19 @@ public class InstanceEavQuerySupport {
         for (InstanceFilter filter : filters) {
             SchemaProperty property = requireProperty(propertiesByName, filter.property());
             String alias = "f" + index;
-            String column = valueColumn(property.getBaseType());
             jpql.append("JOIN InstancePropertyValue ").append(alias).append(" ON ").append(alias).append(".instance = i ")
                     .append("AND ").append(alias).append(".property.id = :pid").append(index).append(" ");
             params.put("pid" + index, property.getId());
 
-            Object paramValue = filter.value();
             if (filter.operator() == FilterOperator.CONTAINS) {
-                jpql.append("AND ").append(alias).append(".").append(column).append(" LIKE :val").append(index).append(" ");
-                paramValue = "%" + paramValue + "%";
+                jpql.append("AND ").append(alias).append(".value LIKE :val").append(index).append(" ");
+                params.put("val" + index, "%" + filter.value() + "%");
             } else {
+                String column = valueExpression(alias, property);
                 String operator = SQL_OPERATORS.get(filter.operator());
-                jpql.append("AND ").append(alias).append(".").append(column).append(" ").append(operator)
-                        .append(" :val").append(index).append(" ");
+                jpql.append("AND ").append(column).append(" ").append(operator).append(" :val").append(index).append(" ");
+                params.put("val" + index, codec.parseFilterValue(property.getPropertyType(), filter.value()));
             }
-            params.put("val" + index, paramValue);
             index++;
         }
     }

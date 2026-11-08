@@ -12,8 +12,7 @@ import com.ronald.crm.instance.web.dto.InstanceReportRow;
 import com.ronald.crm.instance.web.dto.InstanceResponse;
 import com.ronald.crm.instance.web.dto.InstanceSort;
 import com.ronald.crm.instance.web.dto.SortDirection;
-import com.ronald.crm.metadata.domain.PropertyBaseType;
-import com.ronald.crm.metadata.domain.PropertyInputType;
+import com.ronald.crm.metadata.domain.PropertyType;
 import com.ronald.crm.metadata.service.SchemaDefinitionService;
 import com.ronald.crm.metadata.service.SchemaPropertyService;
 import com.ronald.crm.metadata.web.dto.SchemaDefinitionCreateRequest;
@@ -50,13 +49,15 @@ class InstanceQueryServiceTest {
     void seedReportingData() {
         schemaDefinitionService.create(new SchemaDefinitionCreateRequest("Deal Report Test", SCHEMA, null, null));
         schemaPropertyService.create(SCHEMA, new SchemaPropertyCreateRequest(
-                "Category", "category", null, null, PropertyBaseType.STRING, PropertyInputType.TEXT, null, null));
+                "Category", "category", null, null, PropertyType.STRING, null, null, null, null));
         schemaPropertyService.create(SCHEMA, new SchemaPropertyCreateRequest(
-                "Amount", "amount", null, null, PropertyBaseType.NUMBER, PropertyInputType.TEXT, null, null));
+                "Amount", "amount", null, null, PropertyType.NUMBER, null, null, null, null));
+        schemaPropertyService.create(SCHEMA, new SchemaPropertyCreateRequest(
+                "Close Date", "closeDate", null, null, PropertyType.DATE, null, null, null, null));
 
-        instanceService.create(SCHEMA, new InstanceCreateRequest(Map.of("category", "A", "amount", 100)));
-        instanceService.create(SCHEMA, new InstanceCreateRequest(Map.of("category", "A", "amount", 50)));
-        instanceService.create(SCHEMA, new InstanceCreateRequest(Map.of("category", "B", "amount", 10)));
+        instanceService.create(SCHEMA, new InstanceCreateRequest(Map.of("category", "A", "amount", 100, "closeDate", "2026-03-01")));
+        instanceService.create(SCHEMA, new InstanceCreateRequest(Map.of("category", "A", "amount", 50, "closeDate", "2026-01-15")));
+        instanceService.create(SCHEMA, new InstanceCreateRequest(Map.of("category", "B", "amount", 10, "closeDate", "2026-02-10")));
     }
 
     @Test
@@ -80,6 +81,29 @@ class InstanceQueryServiceTest {
                 .map(r -> ((Number) r.properties().get("amount")).intValue())
                 .toList();
         assertThat(amounts).containsExactly(100, 50, 10);
+    }
+
+    @Test
+    void sortsByDatePropertyAscending() {
+        InstanceQueryRequest request = new InstanceQueryRequest(
+                null, List.of(new InstanceSort("closeDate", SortDirection.ASC)), 0, 10);
+
+        Page<InstanceResponse> page = instanceQueryService.query(SCHEMA, request);
+
+        List<String> dates = page.getContent().stream()
+                .map(r -> String.valueOf(r.properties().get("closeDate")))
+                .toList();
+        assertThat(dates).containsExactly("2026-01-15", "2026-02-10", "2026-03-01");
+    }
+
+    @Test
+    void filtersByNumberGreaterThan() {
+        InstanceQueryRequest request = new InstanceQueryRequest(
+                List.of(new InstanceFilter("amount", FilterOperator.GT, 20)), null, null, null);
+
+        Page<InstanceResponse> page = instanceQueryService.query(SCHEMA, request);
+
+        assertThat(page.getTotalElements()).isEqualTo(2);
     }
 
     @Test

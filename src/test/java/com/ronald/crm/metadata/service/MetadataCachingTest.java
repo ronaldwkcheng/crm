@@ -3,8 +3,7 @@ package com.ronald.crm.metadata.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.ronald.crm.common.config.CacheNames;
-import com.ronald.crm.metadata.domain.PropertyBaseType;
-import com.ronald.crm.metadata.domain.PropertyInputType;
+import com.ronald.crm.metadata.domain.PropertyType;
 import com.ronald.crm.metadata.web.dto.SchemaDefinitionCreateRequest;
 import com.ronald.crm.metadata.web.dto.SchemaDefinitionResponse;
 import com.ronald.crm.metadata.web.dto.SchemaDefinitionUpdateRequest;
@@ -74,7 +73,7 @@ class MetadataCachingTest {
         assertThat(schemas.get(internalName)).as("get() should have cached the schema").isNotNull();
 
         schemaPropertyService.create(internalName, new SchemaPropertyCreateRequest(
-                "Notes", "notes", null, null, PropertyBaseType.STRING, PropertyInputType.TEXT, null, null));
+                "Notes", "notes", null, null, PropertyType.STRING, null, null, null, null));
 
         assertThat(schemas.get(internalName))
                 .as("adding a property embeds into SchemaDefinitionResponse, so it must evict the parent's cache entry")

@@ -84,25 +84,22 @@ type SchemaProperty {
     createdDate: DateTime!
     lastUpdatedDate: DateTime!
     version: Long!
-    baseType: PropertyBaseType!
-    inputType: PropertyInputType!
+    propertyType: PropertyType!
     visibility: PropertyVisibility!
     enumTypeInternalName: String
+    currencyCode: String
+    required: Boolean!
 }
 
-enum PropertyBaseType {
+enum PropertyType {
     NUMBER
     STRING
     DATE
-    DATETIME
     TIME
+    DATETIME
     EMAIL
     PHONE_NUMBER
-    ENUM
-}
-
-enum PropertyInputType {
-    TEXT
+    CURRENCY
     SELECT_SINGLE
     SELECT_MULTIPLE
 }
@@ -215,10 +212,11 @@ input SchemaPropertyInput {
     internalName: String!
     summary: String
     description: String
-    baseType: PropertyBaseType!
-    inputType: PropertyInputType!
+    propertyType: PropertyType!
     visibility: PropertyVisibility
     enumTypeInternalName: String
+    currencyCode: String
+    required: Boolean
 }
 
 input SchemaPropertyUpdateInput {
@@ -226,6 +224,7 @@ input SchemaPropertyUpdateInput {
     summary: String
     description: String
     visibility: PropertyVisibility!
+    required: Boolean!
     version: Long!
 }
 

@@ -2,6 +2,7 @@ package com.ronald.crm.metadata.validator;
 
 import com.ronald.crm.common.exception.ConflictException;
 import com.ronald.crm.common.exception.DuplicateInternalNameException;
+import com.ronald.crm.common.exception.ValidationException;
 import com.ronald.crm.metadata.domain.EnumTypeDefinition;
 import com.ronald.crm.metadata.domain.EnumValueDefinition;
 import com.ronald.crm.metadata.repository.EnumValueDefinitionRepository;
@@ -19,6 +20,11 @@ public class EnumValueValidator {
     private final InstanceExistenceChecker instanceExistenceChecker;
 
     public void validateCreate(EnumTypeDefinition enumType, EnumValueCreateRequest request) {
+        // A SELECT_MULTIPLE instance value joins its selected itemValues with a comma into one stored
+        // row (see PropertyValueCodec), so a comma inside itemValue itself would make that join ambiguous.
+        if (request.itemValue().contains(",")) {
+            throw new ValidationException("itemValue must not contain a comma: " + request.itemValue());
+        }
         if (enumValueDefinitionRepository.existsByEnumTypeDefinitionAndItemValue(enumType, request.itemValue())) {
             throw new DuplicateInternalNameException(
                     "Enum value already exists on type '" + enumType.getInternalName() + "': " + request.itemValue());

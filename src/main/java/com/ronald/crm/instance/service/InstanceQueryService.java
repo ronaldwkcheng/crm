@@ -60,7 +60,7 @@ public class InstanceQueryService {
             sortJoins.append("LEFT JOIN InstancePropertyValue ").append(alias).append(" ON ").append(alias)
                     .append(".instance = i AND ").append(alias).append(".property.id = :sortPid").append(sortIndex).append(" ");
             params.put("sortPid" + sortIndex, property.getId());
-            String column = alias + "." + querySupport.valueColumn(property.getBaseType());
+            String column = querySupport.valueExpression(alias, property);
             orderColumns.add(column);
             orderClauses.add(column + " " + sort.direction());
             sortIndex++;

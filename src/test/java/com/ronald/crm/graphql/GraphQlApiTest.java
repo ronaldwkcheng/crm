@@ -42,7 +42,7 @@ class GraphQlApiTest {
 
     @Test
     void queriesSeededCustomerSchemaWithProperties() throws Exception {
-        graphQl("query { schema(internalName: \"customer\") { internalName properties { internalName baseType } } }", null)
+        graphQl("query { schema(internalName: \"customer\") { internalName properties { internalName propertyType } } }", null)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.schema.internalName", is("customer")))
                 .andExpect(jsonPath("$.data.schema.properties.length()", is(6)));

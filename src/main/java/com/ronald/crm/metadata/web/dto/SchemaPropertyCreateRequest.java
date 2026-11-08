@@ -1,7 +1,6 @@
 package com.ronald.crm.metadata.web.dto;
 
-import com.ronald.crm.metadata.domain.PropertyBaseType;
-import com.ronald.crm.metadata.domain.PropertyInputType;
+import com.ronald.crm.metadata.domain.PropertyType;
 import com.ronald.crm.metadata.domain.PropertyVisibility;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,8 +12,9 @@ public record SchemaPropertyCreateRequest(
         String internalName,
         String summary,
         String description,
-        @NotNull PropertyBaseType baseType,
-        @NotNull PropertyInputType inputType,
+        @NotNull PropertyType propertyType,
         PropertyVisibility visibility,
-        String enumTypeInternalName) {
+        String enumTypeInternalName,
+        String currencyCode,
+        Boolean required) {
 }

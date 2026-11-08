@@ -55,10 +55,12 @@ databaseChangeLog:
               - column: { name: created_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: last_updated_date, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: version, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
-              - column: { name: base_type, type: VARCHAR(30), constraints: { nullable: false } }
-              - column: { name: input_type, type: VARCHAR(30), constraints: { nullable: false } }
+              - column: { name: property_type, type: VARCHAR(30), constraints: { nullable: false } }
               - column: { name: visibility, type: VARCHAR(30), constraints: { nullable: false } }
               - column: { name: enum_type_definition_id, type: BIGINT, constraints: { nullable: true, foreignKeyName: fk_property_enum_type, references: enum_type_definition(id) } }
+              # Required iff property_type=CURRENCY; enforced in SchemaPropertyValidator, not the schema.
+              - column: { name: currency_code, type: VARCHAR(3) }
+              - column: { name: is_required, type: BOOLEAN, defaultValueBoolean: false, constraints: { nullable: false } }
         - addUniqueConstraint:
             tableName: schema_property
             columnNames: schema_definition_id, internal_name
